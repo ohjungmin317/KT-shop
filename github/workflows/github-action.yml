@@ -1,0 +1,65 @@
+name: github-action
+run-name: ${{ github.actor }} is out building GitHub Actions
+
+on:
+  push:
+    # Pattern matched against refs/tags
+    tags:        
+      - '**' 
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Build Maven Projects
+        run: |
+          mvn clean package -f ./order service/pom.xml
+          mvn clean package -f ./support service/pom.xml
+          mvn clean package -f ./dashboard service/pom.xml
+
+      - name: Docker Build and push for OrderService
+        uses: docker/build-push-action@v4
+        with:
+          context: ./order service
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/order-service:latest
+            ghcr.io/${{ github.repository }}/order-service:${{ github.ref_name }}
+            
+      - name: Docker Build and push for SupportService
+        uses: docker/build-push-action@v4
+        with:
+          context: ./support service
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/support-service:latest
+            ghcr.io/${{ github.repository }}/support-service:${{ github.ref_name }}
+            
+      - name: Docker Build and push for DashboardService
+        uses: docker/build-push-action@v4
+        with:
+          context: ./dashboard service
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/dashboard-service:latest
+            ghcr.io/${{ github.repository }}/dashboard-service:${{ github.ref_name }}
+            
