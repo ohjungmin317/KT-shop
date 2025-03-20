@@ -33,7 +33,7 @@ public class MyViewViewHandler {
             myView.setPrice(orderPlaced.getPrice());
             myView.setQty(orderPlaced.getQty());
             myView.setAddress(orderPlaced.getAddress());
-            myView.setOrderStatus(ordered);
+            myView.setOrderStatus("ordered");
             // view 레파지 토리에 save
             myViewRepository.save(myView);
 
@@ -53,7 +53,7 @@ public class MyViewViewHandler {
             if( myViewOptional.isPresent()) {
                  MyView myView = myViewOptional.get();
             // view 객체에 이벤트의 eventDirectValue 를 set 함
-                myView.setDeliveryStatus(delivery started);    
+                myView.setDeliveryStatus("delivery started");    
                 // view 레파지 토리에 save
                  myViewRepository.save(myView);
                 }
@@ -73,7 +73,7 @@ public class MyViewViewHandler {
             if( myViewOptional.isPresent()) {
                  MyView myView = myViewOptional.get();
             // view 객체에 이벤트의 eventDirectValue 를 set 함
-                myView.setDeliveryStatus(delivery cancelled);    
+                myView.setDeliveryStatus("delivery cancelled");    
                 // view 레파지 토리에 save
                  myViewRepository.save(myView);
                 }

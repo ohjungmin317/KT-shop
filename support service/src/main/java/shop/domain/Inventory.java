@@ -1,20 +1,17 @@
 package shop.domain;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.LocalDate;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
 import javax.persistence.*;
 import lombok.Data;
 import shop.SupportServiceApplication;
 import shop.domain.InventoryDecreased;
 import shop.domain.InventoryIncreased;
+import java.math.BigDecimal;
+import java.util.Optional;
 
 @Entity
 @Table(name = "Inventory_table")
 @Data
-//<<< DDD / Aggregate Root
 public class Inventory {
 
     @Id
@@ -23,74 +20,53 @@ public class Inventory {
 
     private String name;
 
-    private String price;
+    // ✅ price 타입을 String -> BigDecimal로 변경
+    private BigDecimal price; 
 
     private Integer qty;
 
     public static InventoryRepository repository() {
-        InventoryRepository inventoryRepository = SupportServiceApplication.applicationContext.getBean(
-            InventoryRepository.class
-        );
-        return inventoryRepository;
+        return SupportServiceApplication.applicationContext.getBean(InventoryRepository.class);
     }
 
-    //<<< Clean Arch / Port Method
     public static void decreaseInventory(DeliveryStarted deliveryStarted) {
-        //implement business logic here:
+        // ✅ Order ID가 null이 아니고, 숫자로 변환 가능한지 확인
+        Optional.ofNullable(deliveryStarted.getOrderId())
+                .map(orderId -> {
+                    try {
+                        return Long.valueOf(orderId);
+                    } catch (NumberFormatException e) {
+                        return null;
+                    }
+                })
+                .ifPresent(orderId -> repository().findById(orderId).ifPresent(inventory -> {
+                    if (inventory.getQty() != null && inventory.getQty() > 0) {
+                        inventory.setQty(inventory.getQty() - 1); // 수량 감소
+                        repository().save(inventory);
 
-        /** Example 1:  new item 
-        Inventory inventory = new Inventory();
-        repository().save(inventory);
-
-        InventoryDecreased inventoryDecreased = new InventoryDecreased(inventory);
-        inventoryDecreased.publishAfterCommit();
-        */
-
-        /** Example 2:  finding and process
-        
-
-        repository().findById(deliveryStarted.get???()).ifPresent(inventory->{
-            
-            inventory // do something
-            repository().save(inventory);
-
-            InventoryDecreased inventoryDecreased = new InventoryDecreased(inventory);
-            inventoryDecreased.publishAfterCommit();
-
-         });
-        */
-
+                        InventoryDecreased inventoryDecreased = new InventoryDecreased(inventory);
+                        inventoryDecreased.publishAfterCommit();
+                    }
+                }));
     }
 
-    //>>> Clean Arch / Port Method
-    //<<< Clean Arch / Port Method
     public static void increaseInventory(DeliveryCancelled deliveryCancelled) {
-        //implement business logic here:
+        Optional.ofNullable(deliveryCancelled.getOrderId())
+                .map(orderId -> {
+                    try {
+                        return Long.valueOf(orderId);
+                    } catch (NumberFormatException e) {
+                        return null;
+                    }
+                })
+                .ifPresent(orderId -> repository().findById(orderId).ifPresent(inventory -> {
+                    if (inventory.getQty() != null) {
+                        inventory.setQty(inventory.getQty() + 1); // 수량 증가
+                        repository().save(inventory);
 
-        /** Example 1:  new item 
-        Inventory inventory = new Inventory();
-        repository().save(inventory);
-
-        InventoryIncreased inventoryIncreased = new InventoryIncreased(inventory);
-        inventoryIncreased.publishAfterCommit();
-        */
-
-        /** Example 2:  finding and process
-        
-
-        repository().findById(deliveryCancelled.get???()).ifPresent(inventory->{
-            
-            inventory // do something
-            repository().save(inventory);
-
-            InventoryIncreased inventoryIncreased = new InventoryIncreased(inventory);
-            inventoryIncreased.publishAfterCommit();
-
-         });
-        */
-
+                        InventoryIncreased inventoryIncreased = new InventoryIncreased(inventory);
+                        inventoryIncreased.publishAfterCommit();
+                    }
+                }));
     }
-    //>>> Clean Arch / Port Method
-
 }
-//>>> DDD / Aggregate Root
